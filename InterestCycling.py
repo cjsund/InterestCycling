@@ -5,18 +5,21 @@ import urllib2
 import smtplib
 import os
 
+
 from sgmllib import SGMLParser
 from email.mime.text import MIMEText
+from config import *
+
 
 path = os.getcwd()
 url_html = urllib2.urlopen('http://www.dongfanghong.com.cn/bbs/forum.php?mod=forumdisplay&fid=11&filter=author&orderby=dateline').read()
 html = unicode(url_html, 'GBK').encode('UTF-8')
-mail_list = "yong.yang"
-
+mail_list = Mail_List
+print Mail_User
 
 class Send_Mail(object):
 
-    def __init__(self, to, whois="cjsund@126.com"):
+    def __init__(self, to, whois=Mail_From):
         self.whois = whois
         self.to = to
 
@@ -26,7 +29,7 @@ class Send_Mail(object):
         self.msg['from'] = self.whois
         self.msg['To'] = self.to
 
-    def send(self, user="", password="", smtp_server="smtp..com", port="25"):
+    def send(self, user=Mail_User, password=Mail_Passwd, smtp_server=Mail_Smtp, port="25"):
         smtp = smtplib.SMTP(smtp_server, port)
         smtp.ehlo()
         smtp.starttls()
