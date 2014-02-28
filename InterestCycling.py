@@ -11,7 +11,7 @@ from email.mime.text import MIMEText
 path = os.getcwd()
 url_html = urllib2.urlopen('http://www.dongfanghong.com.cn/bbs/forum.php?mod=forumdisplay&fid=11&filter=author&orderby=dateline').read()
 html = unicode(url_html, 'GBK').encode('UTF-8')
-mail_list = "yong.yang@ihaveu.net"
+mail_list = "yong.yang"
 
 
 class Send_Mail(object):
@@ -26,7 +26,7 @@ class Send_Mail(object):
         self.msg['from'] = self.whois
         self.msg['To'] = self.to
 
-    def send(self, user="cjsund", password="xf19750123", smtp_server="smtp.126.com", port="25"):
+    def send(self, user="", password="", smtp_server="smtp..com", port="25"):
         smtp = smtplib.SMTP(smtp_server, port)
         smtp.ehlo()
         smtp.starttls()
