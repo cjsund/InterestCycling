@@ -3,19 +3,26 @@
 
 import urllib2
 import smtplib
+import sys
 import os
 
+import chardet
 
 from sgmllib import SGMLParser
 from email.mime.text import MIMEText
+from collections import OrderedDict
+
 from config import *
 
+#Html_List = {"www.dongfanghong.com.cn": "http://www.dongfanghong.com.cn/bbs/forum.php?mod=forumdisplay&fid=11&filter=author&orderby=dateline",
+#            "www.fengyunbike.com": "http://www.fengyunbike.com/forum.php?mod=forumdisplay&fid=9&filter=author&orderby=dateline",
+#            "bbs.cyclist.cn": "http://bbs.cyclist.cn/forum.php?mod=forumdisplay&fid=25&filter=author&orderby=dateline",
+#            "bbs.chinabike.net": "http://bbs.chinabike.net/forum.php?mod=forumdisplay&fid=35&filter=author&orderby=dateline",
+#            "bbs.biketo.com": "http://bbs.biketo.com/forum.php?mod=forumdisplay&fid=39&filter=author&orderby=dateline"}
+#Web_List = ["www.dongfanghong.com.cn", "www.fengyunbike.com", "bbs.cyclist.cn", "bbs.chinabike.net", "bbs.biketo.com"]
 
 path = os.getcwd()
-url_html = urllib2.urlopen('http://www.dongfanghong.com.cn/bbs/forum.php?mod=forumdisplay&fid=11&filter=author&orderby=dateline').read()
-html = unicode(url_html, 'GBK').encode('UTF-8')
-mail_list = Mail_List
-print Mail_User
+
 
 class Send_Mail(object):
 
@@ -23,7 +30,7 @@ class Send_Mail(object):
         self.whois = whois
         self.to = to
 
-    def mail_body(self, subject=u"东方红二手更新", content="This is test mail.", charset="utf-8", subtype='html'):
+    def mail_body(self, subject=u"二手更新", content="This is test mail.", charset="utf-8", subtype='html'):
         self.msg = MIMEText(content, subtype, charset)
         self.msg['Subject'] = subject
         self.msg['from'] = self.whois
@@ -35,8 +42,8 @@ class Send_Mail(object):
         smtp.starttls()
         smtp.login(user, password)
         for mail in self.to.split(","):
-        	if smtp.sendmail(self.whois, mail, self.msg.as_string()):
-        		print "Send Mail to %s" % mail
+            if smtp.sendmail(self.whois, mail, self.msg.as_string()):
+                print "Send Mail to %s" % mail
 
 
 class GetIdList(SGMLParser):
@@ -66,14 +73,13 @@ class GetIdList(SGMLParser):
     def start_a(self, attrs):
         if self.flag == False:
             return
-        self.getdata = True
         for k,v in attrs:
-        	if k == 'class' and v == 'xst':
-        		self.flag = True
-        		href = [ v for k, v in attrs if k == 'href']
-        		if href:
-        			self.IDlist.append(href)
-        		return
+            if k == 'class' and v == 'xst' or k == 'class' and v == 's xst':
+                self.getdata = True
+                href = [ v for k, v in attrs if k == 'href']
+                if href:
+                    self.IDlist.append(href[0])
+
         
     def end_a(self):
         if self.getdata:
@@ -83,58 +89,81 @@ class GetIdList(SGMLParser):
         if self.getdata:
             self.IDlist.append(text)
             
-    def printID(self):
-        for i in self.IDlist:
-            print i
 
 class WriteMail(object):
 
-	def __init__(self):
-		self.setp = 4
-		self.setp_url = 1
-		self.setp_title1 = 0
-		self.setp_title2 = 2
+    def __init__(self, bbs_name):
+        self.setp = 2
+        self.setp_url = 0
+        self.setp_title1 = 1
 
-		self.analyze = GetIdList()
-		self.analyze.feed(html)
+        self.bbs_name = bbs_name
 
-		self.old_url = open(os.path.join(path, "old_url.log"), 'r').read().strip()
-		self.new_url = self.point_url = str(self.analyze.IDlist[self.setp_url])[2:-2]
-		if self.new_url == self.old_url:
-			print "No change."
-			import sys
-			sys.exit(0)
-		
+        self.analyze = GetIdList()
+        self.analyze.feed(gethtml(Html_List.get(self.bbs_name)))
 
-	def write(self):
-		with open(os.path.join(path, "mail_body.txt"), 'w') as self.mail_body:
-			#try:
-			while True:
-				self.new_url = str(self.analyze.IDlist[self.setp_url])[2:-2]
-				self.new_title1 = str(self.analyze.IDlist[self.setp_title1])
-				self.new_title2 = str(self.analyze.IDlist[self.setp_title2])
-				if self.new_url == self.old_url:
-					break
-				self.mail_body.write("<a href=""http://www.dongfanghong.com.cn/bbs/%s"">[%s]%s</a><br /></br>\n" % (self.new_url, self.new_title1, self.new_title2))
-				self.setp_url += self.setp
-				self.setp_title1 += self.setp
-				self.setp_title2 += self.setp
+    def readlog(self):
+        self.old_url_list = OrderedDict()
+        with open(os.path.join(path, "OrderedDict.log"), 'r') as order:
+            for i in order:
+                name, url = i.split(":", 1)
+                self.old_url_list[name] = url
+        self.old_url = self.old_url_list.get(self.bbs_name).strip()
+        self.new_url = self.point_url = str(self.analyze.IDlist[self.setp_url])
+        self.len_num = len(self.analyze.IDlist) - 1
+        if self.new_url == self.old_url:
+            print "%s No change." % self.bbs_name
+            return
+        
+    def writelog(self):
+        self.old_url_list[self.bbs_name] = self.point_url + "\n"
+        with open(os.path.join(path, "OrderedDict.log"), 'w') as order:
+            for i in Web_List:
+                order.write("%s:%s" % (i, self.old_url_list.get(i)))
 
-		with open(os.path.join(path, "old_url.log"), 'w') as old_url:
-			old_url.write(self.point_url)
-		send_mail = Send_Mail(to=mail_list)
-		send_mail.mail_body(content=open(os.path.join(path, "mail_body.txt"), 'r').read())
-		send_mail.send()
-			#except IndexError:
-			#	#print e
-			#	print "len(use.IDlist) %s " % len(self.analyze.IDlist)
-       		#	print self.setp_url
-       		#	print self.new_url
-       		#	print self.new_title1
-       		#	print self.new_title2
-       		#	import sys
-       		#	sys.exit(1)
 
-use = WriteMail()
-use.write()
+    def write(self):
+        with open(os.path.join(path, "mail_body.txt"), 'a') as self.mail_body:
+            #try:
+            self.mail_body.write("<h3>%s</h3><br /></br>\n" % self.bbs_name)
+            while True:
+                if self.setp_url >= self.len_num or self.setp_title1 >= self.len_num:
+                    return
+                self.new_url = self.analyze.IDlist[self.setp_url]
+                self.new_title1 = self.analyze.IDlist[self.setp_title1]
+                if self.new_url == self.old_url:
+                    return
+                if self.bbs_name == "www.dongfanghong.com.cn":
+                    self.mail_body.write("<a href=""http://%s/bbs/%s"">%s</a><br /></br>\n" % (self.bbs_name, self.new_url, self.new_title1))
+                else:
+                    self.mail_body.write("<a href=""http://%s/%s"">%s</a><br /></br>\n" % (self.bbs_name, self.new_url, self.new_title1))
+                self.setp_url += self.setp
+                self.setp_title1 += self.setp
+
+
+
+
+
+def gethtml(bbs_name):
+    url_html = urllib2.urlopen(bbs_name, timeout=60).read()
+    html_encode = chardet.detect(url_html).get('encoding', 'utf-8')
+    location_encode = sys.getfilesystemencoding()
+    return url_html.decode(html_encode, 'ignore').encode(location_encode)
+
+
+if __name__ == '__main__':
+
+    with open(os.path.join(path, "mail_body.txt"), 'w') as mail_body:
+        mail_body.truncate()
+        mail_body.write("退订请回复邮件。\n")
+    
+    for name in Web_List:
+        use = WriteMail(bbs_name=name)
+        use.readlog()
+        use.writelog()
+        use.write()
+    
+    send = Send_Mail(to=Mail_List)
+    send.mail_body(content=open(os.path.join(path, "mail_body.txt"), 'r').read())
+    send.send()
 
