@@ -15,7 +15,7 @@ from collections import OrderedDict
 from config import *
 
 path = os.getcwd()
-mail_status = 0
+mail_status = False
 Keyword_List = ["坐垫", "把组", "弯把", "3t", "Specialized", "selle", "deda"]
 
 class Send_Mail(object):
@@ -106,8 +106,6 @@ class WriteMail(object):
         self.new_url = self.point_url = str(self.analyze.IDlist[self.setp_url])
         self.len_num = len(self.analyze.IDlist) - 1
         if self.new_url == self.old_url:
-            global mail_status
-            mail_status += 1
             print "%s No change." % self.bbs_name
             return
         
@@ -119,6 +117,7 @@ class WriteMail(object):
 
 
     def write(self):
+        global mail_status
         with open(os.path.join(path, "mail_body.txt"), 'a') as self.mail_body:
             while True:
                 if self.setp_url >= self.len_num or self.setp_title1 >= self.len_num:
@@ -129,6 +128,7 @@ class WriteMail(object):
                     return
                 for keyword in Keyword_List:
                     if keyword in self.new_title1:
+                        mail_status = True
                         if self.bbs_name == "www.dongfanghong.com.cn":
                             self.mail_body.write("<a href=""http://%s/bbs/%s"">%s</a><br /></br>\n" % (self.bbs_name, self.new_url, self.new_title1))
                         else:
@@ -160,7 +160,7 @@ if __name__ == '__main__':
         use.writelog()
         use.write()
 
-    if len(Web_List) > mail_status:
+    if mail_status:
         send = Send_Mail(to=Mail_List)
         send.mail_body(content=open(os.path.join(path, "mail_body.txt"), 'r').read())
         send.send()
