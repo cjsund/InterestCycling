@@ -14,15 +14,10 @@ from collections import OrderedDict
 
 from config import *
 
-#Html_List = {"www.dongfanghong.com.cn": "http://www.dongfanghong.com.cn/bbs/forum.php?mod=forumdisplay&fid=11&filter=author&orderby=dateline",
-#            "www.fengyunbike.com": "http://www.fengyunbike.com/forum.php?mod=forumdisplay&fid=9&filter=author&orderby=dateline",
-#            "bbs.cyclist.cn": "http://bbs.cyclist.cn/forum.php?mod=forumdisplay&fid=25&filter=author&orderby=dateline",
-#            "bbs.chinabike.net": "http://bbs.chinabike.net/forum.php?mod=forumdisplay&fid=35&filter=author&orderby=dateline",
-#            "bbs.biketo.com": "http://bbs.biketo.com/forum.php?mod=forumdisplay&fid=39&filter=author&orderby=dateline"}
-#Web_List = ["www.dongfanghong.com.cn", "www.fengyunbike.com", "bbs.cyclist.cn", "bbs.chinabike.net", "bbs.biketo.com"]
+
 
 path = os.getcwd()
-
+mail_status = 0
 
 class Send_Mail(object):
 
@@ -112,6 +107,8 @@ class WriteMail(object):
         self.new_url = self.point_url = str(self.analyze.IDlist[self.setp_url])
         self.len_num = len(self.analyze.IDlist) - 1
         if self.new_url == self.old_url:
+            global mail_status
+            mail_status += 1
             print "%s No change." % self.bbs_name
             return
         
@@ -162,8 +159,9 @@ if __name__ == '__main__':
         use.readlog()
         use.writelog()
         use.write()
-    
-    send = Send_Mail(to=Mail_List)
-    send.mail_body(content=open(os.path.join(path, "mail_body.txt"), 'r').read())
-    send.send()
+
+    if len(Web_List) > mail_status:
+        send = Send_Mail(to=Mail_List)
+        send.mail_body(content=open(os.path.join(path, "mail_body.txt"), 'r').read())
+        send.send()
 
