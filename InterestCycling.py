@@ -14,10 +14,9 @@ from collections import OrderedDict
 
 from config import *
 
-
-
 path = os.getcwd()
 mail_status = 0
+Keyword_List = ["坐垫", "把组", "弯把", "3t", "Specialized", "selle", "deda"]
 
 class Send_Mail(object):
 
@@ -121,7 +120,6 @@ class WriteMail(object):
 
     def write(self):
         with open(os.path.join(path, "mail_body.txt"), 'a') as self.mail_body:
-            #self.mail_body.write("<h3>%s</h3><br /></br>\n" % self.bbs_name)
             while True:
                 if self.setp_url >= self.len_num or self.setp_title1 >= self.len_num:
                     return
@@ -129,10 +127,13 @@ class WriteMail(object):
                 self.new_title1 = self.analyze.IDlist[self.setp_title1]
                 if self.new_url == self.old_url:
                     return
-                if self.bbs_name == "www.dongfanghong.com.cn":
-                    self.mail_body.write("<a href=""http://%s/bbs/%s"">%s</a><br /></br>\n" % (self.bbs_name, self.new_url, self.new_title1))
-                else:
-                    self.mail_body.write("<a href=""http://%s/%s"">%s</a><br /></br>\n" % (self.bbs_name, self.new_url, self.new_title1))
+                for keyword in Keyword_List:
+                    if keyword in self.new_title1:
+                        if self.bbs_name == "www.dongfanghong.com.cn":
+                            self.mail_body.write("<a href=""http://%s/bbs/%s"">%s</a><br /></br>\n" % (self.bbs_name, self.new_url, self.new_title1))
+                        else:
+                            self.mail_body.write("<a href=""http://%s/%s"">%s</a><br /></br>\n" % (self.bbs_name, self.new_url, self.new_title1))
+
                 self.setp_url += self.setp
                 self.setp_title1 += self.setp
 
@@ -151,7 +152,7 @@ if __name__ == '__main__':
 
     with open(os.path.join(path, "mail_body.txt"), 'w') as mail_body:
         mail_body.truncate()
-        mail_body.write("退订请回复邮件。\n")
+        mail_body.write("退订请回复邮件。\n<br /></br>")
     
     for name in Web_List:
         use = WriteMail(bbs_name=name)
