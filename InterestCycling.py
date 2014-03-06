@@ -121,8 +121,7 @@ class WriteMail(object):
 
     def write(self):
         with open(os.path.join(path, "mail_body.txt"), 'a') as self.mail_body:
-            #try:
-            self.mail_body.write("<h3>%s</h3><br /></br>\n" % self.bbs_name)
+            #self.mail_body.write("<h3>%s</h3><br /></br>\n" % self.bbs_name)
             while True:
                 if self.setp_url >= self.len_num or self.setp_title1 >= self.len_num:
                     return
