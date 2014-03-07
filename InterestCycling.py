@@ -8,15 +8,17 @@ import os
 
 import chardet
 
+from datetime import datetime
 from sgmllib import SGMLParser
 from email.mime.text import MIMEText
 from collections import OrderedDict
 
 from config import *
 
-path = os.getcwd()
+path = sys.path[0]
 mail_status = False
 Keyword_List = ["坐垫", "把组", "弯把", "3t", "Specialized", "selle", "deda"]
+now_time = datetime.now().strftime("%Y%m%d%H%M")
 
 class Send_Mail(object):
 
@@ -24,7 +26,7 @@ class Send_Mail(object):
         self.whois = whois
         self.to = to
 
-    def mail_body(self, subject=u"二手更新", content="This is test mail.", charset="utf-8", subtype='html'):
+    def mail_body(self, subject="Second-hand bicycle parts %s" % now_time, content="This is test mail.", charset="utf-8", subtype='html'):
         self.msg = MIMEText(content, subtype, charset)
         self.msg['Subject'] = subject
         self.msg['from'] = self.whois
@@ -94,7 +96,7 @@ class WriteMail(object):
         self.bbs_name = bbs_name
 
         self.analyze = GetIdList()
-        self.analyze.feed(gethtml(Html_List.get(self.bbs_name)))
+        self.analyze.feed(gethtml(Html_List.get(self.bbs_name), self.bbs_name))
 
     def readlog(self):
         self.old_url_list = OrderedDict()
@@ -141,11 +143,20 @@ class WriteMail(object):
 
 
 
-def gethtml(bbs_name):
-    url_html = urllib2.urlopen(bbs_name, timeout=60).read()
+def gethtml(url, url_name):
+    url_html = urllib2.urlopen(url, timeout=60).read()
     html_encode = chardet.detect(url_html).get('encoding', 'utf-8')
     location_encode = sys.getfilesystemencoding()
-    return url_html.decode(html_encode, 'ignore').encode(location_encode)
+    html_file_path = os.path.join(path, "html")
+    html_file = os.path.join(html_file_path, "html_%s_%s" % (now_time, url_name))
+
+    if not os.path.isdir(html_file_path):
+        os.mkdir(html_file_path)
+
+    html = url_html.decode(html_encode, 'ignore').encode(location_encode)
+    with open(html_file , 'w') as html_file:
+        html_file.write(html)
+    return html
 
 
 if __name__ == '__main__':
